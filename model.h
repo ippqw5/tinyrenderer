@@ -5,18 +5,26 @@
 
 #include "geometry.h"
 
-class Model {
- private:
-  std::vector<Vec3f> verts_;
-  std::vector<std::vector<int>> faces_;
+class Model
+{
+  private:
+    std::vector<Vec3f> verts_;
+    std::vector<std::vector<int>> faces_;
 
- public:
-  Model(const char* filename);
-  ~Model();
-  int nverts();
-  int nfaces();
-  Vec3f vert(int i);
-  std::vector<int> face(int idx);
+    std::vector<Vec2f> uv_;
+    std::vector<std::vector<int>> faces_uv_;
+
+  public:
+    Model(const char *filename);
+    ~Model();
+    int nverts();
+    int nfaces();
+
+    Vec3f vert(int i);
+    std::vector<int> face(int idx);
+
+    Vec2f uv(int i);
+    std::vector<int> face_uv(int idx);
 };
 
 #endif
