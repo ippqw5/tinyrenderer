@@ -150,7 +150,7 @@ void triangle(Vec3f v_pts[3], Vec2f uv[3], TGAImage &image, TGAImage &texture)
             if (zbuffer[idx] < interpolated_z)
             {
                 zbuffer[idx] = interpolated_z;
-                TGAColor color = texture.get((1.0 - interpolated_uv.x) * texture.get_width(),
+                TGAColor color = texture.get((interpolated_uv.x) * texture.get_width(),
                                              (1.0 - interpolated_uv.y) * texture.get_height());
                 image.set(P.x, P.y, color);
             }
