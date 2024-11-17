@@ -57,7 +57,7 @@ void triangle(Vec3f v_pts[3], Vec2f uv[3], TGAImage &image, TGAImage &texture)
             Vec2f interpolated_uv = uv[0] * bc_screen.x + uv[1] * bc_screen.y + uv[2] * bc_screen.z;
             int idx = int(P.x + P.y * width);
 
-            if (zbuffer[idx] < interpolated_z)
+            if (zbuffer[idx] < interpolated_z) // bigger z means closer to the camera
             {
                 zbuffer[idx] = interpolated_z;
                 TGAColor color = texture.get((interpolated_uv.x) * texture.get_width(),
