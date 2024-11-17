@@ -1,6 +1,6 @@
 SYSCONF_LINK = g++
-CPPFLAGS     =
-LDFLAGS      =
+CPPFLAGS     = -O3 -std=c++17
+LDFLAGS      = -O3
 LIBS         = -lm
 
 DESTDIR = ./build/
@@ -23,4 +23,5 @@ clean:
 	-rm -f $(OBJECTS)
 	-rm -f $(DESTDIR)$(TARGET)
 	-rm -f *.tga
+	-rm -f *.png
 

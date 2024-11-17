@@ -11,7 +11,36 @@ const TGAColor red = TGAColor(255, 0, 0, 255);
 const TGAColor green = TGAColor(0, 255, 0, 255);
 const int width = 600;
 const int height = 600;
+const int depth = 255;
 float zbuffer[width * height];
+
+Vec3f m2v(Matrix m)
+{
+    return Vec3f(m[0][0] / m[3][0], m[1][0] / m[3][0], m[2][0] / m[3][0]);
+}
+
+Matrix v2m(Vec3f v)
+{
+    Matrix m(4, 1);
+    m[0][0] = v.x;
+    m[1][0] = v.y;
+    m[2][0] = v.z;
+    m[3][0] = 1.f;
+    return m;
+}
+
+Matrix viewport(int x, int y, int w, int h)
+{
+    Matrix m = Matrix::identity(4);
+    m[0][3] = x + w / 2.f;
+    m[1][3] = y + h / 2.f;
+    m[2][3] = depth / 2.f;
+
+    m[0][0] = w / 2.f;
+    m[1][1] = h / 2.f;
+    m[2][2] = depth / 2.f;
+    return m;
+}
 
 void word2screen(Vec3f v_pts[3])
 {
@@ -31,7 +60,7 @@ Vec3f barycentric(Vec3f v_pts[3], Vec3f p)
     return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
-void triangle(Vec3f v_pts[3], Vec2f uv[3], TGAImage &image, TGAImage &texture)
+void triangle(Vec3f v_pts[3], Vec2f uv[3], TGAImage &image, Model &model)
 {
     word2screen(v_pts);
     Vec2f bboxmin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
@@ -60,8 +89,9 @@ void triangle(Vec3f v_pts[3], Vec2f uv[3], TGAImage &image, TGAImage &texture)
             if (zbuffer[idx] < interpolated_z) // bigger z means closer to the camera
             {
                 zbuffer[idx] = interpolated_z;
-                TGAColor color = texture.get((interpolated_uv.x) * texture.get_width(),
-                                             (1.0 - interpolated_uv.y) * texture.get_height());
+                TGAColor color = model.diffuse(interpolated_uv);
+                // TGAColor color = texture.get((interpolated_uv.x) * texture.get_width(),
+                //                              (1.0 - interpolated_uv.y) * texture.get_height());
                 image.set(P.x, P.y, color);
             }
         }
@@ -71,30 +101,38 @@ void triangle(Vec3f v_pts[3], Vec2f uv[3], TGAImage &image, TGAImage &texture)
 int main(int argc, char **argv)
 {
     TGAImage image(width, height, TGAImage::RGB);
-    TGAImage texture;
-    texture.read_tga_file("obj/african_head_diffuse.tga");
+    // TGAImage texture;
+    // texture.read_tga_file("obj/african_head_diffuse.tga");
 
     memset(zbuffer, -100.0, sizeof(zbuffer));
 
     Model model("obj/african_head.obj");
     Vec3f light_dir(0, 0, -1); // define light_dir
+    Vec3f camera(0, 0, 3);     // define camera
+
+    // Matrix ViewPort = viewport(width / 8, height / 8, width * 3 / 4, height * 3 / 4);
+    Matrix Project = Matrix::identity(4);
+    Project[3][2] = -1.f / camera.z;
+
     for (int i = 0; i < model.nfaces(); i++)
     {
         std::vector<int> face = model.face(i);
-        std::vector<int> face_uv = model.face_uv(i);
+        // std::vector<int> face_uv = model.face_uv(i);
         Vec3f v_pts[3];
         Vec2f uv[3];
+        Vec3f v_pts_perspective[3];
         for (int j = 0; j < 3; j++)
         {
             v_pts[j] = model.vert(face[j]);
-            uv[j] = model.uv(face_uv[j]);
+            v_pts_perspective[j] = m2v(Project * v2m(v_pts[j]));
+            uv[j] = model.uv(i, j);
         }
         Vec3f n = (v_pts[2] - v_pts[0]) ^ (v_pts[1] - v_pts[0]);
         n.normalize();
         float intensity = n * light_dir;
         if (intensity > 0.0)
         {
-            triangle(v_pts, uv, image, texture);
+            triangle(v_pts_perspective, uv, image, model);
         }
     }
 
