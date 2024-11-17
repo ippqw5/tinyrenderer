@@ -14,38 +14,33 @@ const int height = 600;
 const int depth = 255;
 float zbuffer[width * height];
 
-Vec3f m2v(Matrix m)
+// View Matrix
+Matrix LookAt(Vec3f eye, Vec3f center, Vec3f up)
 {
-    return Vec3f(m[0][0] / m[3][0], m[1][0] / m[3][0], m[2][0] / m[3][0]);
+    Vec3f z = (eye - center).normalize();
+    Vec3f x = (up ^ z).normalize();
+    Vec3f y = (z ^ x).normalize();
+
+    Matrix rotation = Matrix::identity(4);
+    Matrix translation = Matrix::identity(4);
+
+    for (int i = 0; i < 3; i++)
+    {
+        rotation[0][i] = x[i];
+        rotation[1][i] = y[i];
+        rotation[2][i] = z[i];
+        translation[i][3] = -center[i];
+    }
+
+    return rotation * translation;
 }
 
-Matrix v2m(Vec3f v)
-{
-    Matrix m(4, 1);
-    m[0][0] = v.x;
-    m[1][0] = v.y;
-    m[2][0] = v.z;
-    m[3][0] = 1.f;
-    return m;
-}
-
-Matrix viewport(int x, int y, int w, int h)
-{
-    Matrix m = Matrix::identity(4);
-    m[0][3] = x + w / 2.f;
-    m[1][3] = y + h / 2.f;
-    m[2][3] = depth / 2.f;
-
-    m[0][0] = w / 2.f;
-    m[1][1] = h / 2.f;
-    m[2][2] = depth / 2.f;
-    return m;
-}
-
+// [-1, 1] -> [0, width] or [0, height]
 void word2screen(Vec3f v_pts[3])
 {
     for (int i = 0; i < 3; i++)
     {
+        // [-1,1]->[0,2]->[0,2*width]->[0,width]
         v_pts[i].x = int((v_pts[i].x + 1.f) * width / 2.f);
         v_pts[i].y = int((v_pts[i].y + 1.f) * height / 2.f);
     }
@@ -90,8 +85,6 @@ void triangle(Vec3f v_pts[3], Vec2f uv[3], TGAImage &image, Model &model)
             {
                 zbuffer[idx] = interpolated_z;
                 TGAColor color = model.diffuse(interpolated_uv);
-                // TGAColor color = texture.get((interpolated_uv.x) * texture.get_width(),
-                //                              (1.0 - interpolated_uv.y) * texture.get_height());
                 image.set(P.x, P.y, color);
             }
         }
@@ -101,38 +94,43 @@ void triangle(Vec3f v_pts[3], Vec2f uv[3], TGAImage &image, Model &model)
 int main(int argc, char **argv)
 {
     TGAImage image(width, height, TGAImage::RGB);
-    // TGAImage texture;
-    // texture.read_tga_file("obj/african_head_diffuse.tga");
 
     memset(zbuffer, -100.0, sizeof(zbuffer));
 
     Model model("obj/african_head.obj");
-    Vec3f light_dir(0, 0, -1); // define light_dir
-    Vec3f camera(0, 0, 3);     // define camera
 
-    // Matrix ViewPort = viewport(width / 8, height / 8, width * 3 / 4, height * 3 / 4);
+    Vec3f light_dir = Vec3f(0, 0, -1).normalize();
+    Vec3f eye(1, 0, 3);
+    Vec3f center(0, 0, 0);
+    Vec3f up(0, 1, 0);
+
+    // MVP transformation
+    Matrix Model = Matrix::identity(4);
+    Matrix View = LookAt(eye, center, up);
     Matrix Project = Matrix::identity(4);
-    Project[3][2] = -1.f / camera.z;
+    Project[3][2] = -1.f / (eye - center).z;
 
     for (int i = 0; i < model.nfaces(); i++)
     {
         std::vector<int> face = model.face(i);
-        // std::vector<int> face_uv = model.face_uv(i);
         Vec3f v_pts[3];
-        Vec2f uv[3];
         Vec3f v_pts_perspective[3];
+        Vec2f v_uv[3];
+        Vec3f v_norm[3];
         for (int j = 0; j < 3; j++)
         {
             v_pts[j] = model.vert(face[j]);
-            v_pts_perspective[j] = m2v(Project * v2m(v_pts[j]));
-            uv[j] = model.uv(i, j);
+            v_pts_perspective[j] = m2v(Project * View * Model * v2m(v_pts[j]));
+            v_uv[j] = model.uv(i, j);
+            v_norm[j] = model.norm(i, j);
         }
+        // Vec3f n = (v_norm[0] + v_norm[1] + v_norm[2]).normalize();
         Vec3f n = (v_pts[2] - v_pts[0]) ^ (v_pts[1] - v_pts[0]);
         n.normalize();
         float intensity = n * light_dir;
         if (intensity > 0.0)
         {
-            triangle(v_pts_perspective, uv, image, model);
+            triangle(v_pts_perspective, v_uv, image, model);
         }
     }
 

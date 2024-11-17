@@ -23,5 +23,4 @@ clean:
 	-rm -f $(OBJECTS)
 	-rm -f $(DESTDIR)$(TARGET)
 	-rm -f *.tga
-	-rm -f *.png
 
