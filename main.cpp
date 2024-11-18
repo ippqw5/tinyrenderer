@@ -49,8 +49,6 @@ Vec3f barycentric(Vec3f v_pts[3], Vec3f p)
 {
     Vec3f u = Vec3f(v_pts[2].x - v_pts[0].x, v_pts[1].x - v_pts[0].x, v_pts[0].x - p.x) ^
               Vec3f(v_pts[2].y - v_pts[0].y, v_pts[1].y - v_pts[0].y, v_pts[0].y - p.y);
-    if (std::abs(u.z) < 1)
-        return Vec3f(-1, 1, 1);
     return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
@@ -99,8 +97,8 @@ int main(int argc, char **argv)
 
     Model model("obj/african_head.obj");
 
-    Vec3f light_dir = Vec3f(0, -0.1, -1).normalize();
-    Vec3f eye(0, 0, 3);
+    Vec3f light_dir = Vec3f(-1, 0, -1).normalize();
+    Vec3f eye(1, 0, 1);
     Vec3f center(0, 0, 0);
     Vec3f up(0, 1, 0);
 
@@ -125,8 +123,8 @@ int main(int argc, char **argv)
             v_ity[j] = model.norm(i, j) * light_dir;
         }
         Vec3f n = ((v_pts[2] - v_pts[0]) ^ (v_pts[1] - v_pts[0])).normalize();
-        if (n * light_dir > 0)
-            triangle(v_pts_perspective, v_uv, v_ity, image, model);
+        // if (n * light_dir >= 0.0f)
+        triangle(v_pts_perspective, v_uv, v_ity, image, model);
     }
 
     image.flip_vertically();
