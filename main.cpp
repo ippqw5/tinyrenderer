@@ -21,18 +21,17 @@ Matrix LookAt(Vec3f eye, Vec3f center, Vec3f up)
     Vec3f x = (up ^ z).normalize();
     Vec3f y = (z ^ x).normalize();
 
-    Matrix rotation = Matrix::identity(4);
-    Matrix translation = Matrix::identity(4);
+    Matrix view = Matrix::identity(4);
 
     for (int i = 0; i < 3; i++)
     {
-        rotation[0][i] = x[i];
-        rotation[1][i] = y[i];
-        rotation[2][i] = z[i];
-        translation[i][3] = -center[i];
+        view[0][i] = x[i];
+        view[1][i] = y[i];
+        view[2][i] = z[i];
+        view[i][3] = -center[i];
     }
 
-    return rotation * translation;
+    return view;
 }
 
 // [-1, 1] -> [0, width] or [0, height]
@@ -55,7 +54,7 @@ Vec3f barycentric(Vec3f v_pts[3], Vec3f p)
     return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
-void triangle(Vec3f v_pts[3], Vec2f uv[3], TGAImage &image, Model &model)
+void triangle(Vec3f v_pts[3], Vec2f uv[3], float ity[3], TGAImage &image, Model &model)
 {
     word2screen(v_pts);
     Vec2f bboxmin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
@@ -85,6 +84,7 @@ void triangle(Vec3f v_pts[3], Vec2f uv[3], TGAImage &image, Model &model)
             {
                 zbuffer[idx] = interpolated_z;
                 TGAColor color = model.diffuse(interpolated_uv);
+
                 image.set(P.x, P.y, color);
             }
         }
@@ -99,8 +99,8 @@ int main(int argc, char **argv)
 
     Model model("obj/african_head.obj");
 
-    Vec3f light_dir = Vec3f(0, 0, -1).normalize();
-    Vec3f eye(1, 0, 3);
+    Vec3f light_dir = Vec3f(0, -0.1, -1).normalize();
+    Vec3f eye(0, 0, 3);
     Vec3f center(0, 0, 0);
     Vec3f up(0, 1, 0);
 
@@ -116,22 +116,17 @@ int main(int argc, char **argv)
         Vec3f v_pts[3];
         Vec3f v_pts_perspective[3];
         Vec2f v_uv[3];
-        Vec3f v_norm[3];
+        float v_ity[3];
         for (int j = 0; j < 3; j++)
         {
             v_pts[j] = model.vert(face[j]);
             v_pts_perspective[j] = m2v(Project * View * Model * v2m(v_pts[j]));
             v_uv[j] = model.uv(i, j);
-            v_norm[j] = model.norm(i, j);
+            v_ity[j] = model.norm(i, j) * light_dir;
         }
-        // Vec3f n = (v_norm[0] + v_norm[1] + v_norm[2]).normalize();
-        Vec3f n = (v_pts[2] - v_pts[0]) ^ (v_pts[1] - v_pts[0]);
-        n.normalize();
-        float intensity = n * light_dir;
-        if (intensity > 0.0)
-        {
-            triangle(v_pts_perspective, v_uv, image, model);
-        }
+        Vec3f n = ((v_pts[2] - v_pts[0]) ^ (v_pts[1] - v_pts[0])).normalize();
+        if (n * light_dir > 0)
+            triangle(v_pts_perspective, v_uv, v_ity, image, model);
     }
 
     image.flip_vertically();
