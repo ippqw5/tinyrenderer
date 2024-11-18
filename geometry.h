@@ -5,7 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
-
+class Matrix;
 template <class t> struct Vec2
 {
     t x, y;
@@ -59,6 +59,7 @@ template <class t> struct Vec3
     Vec3<t>(t _x, t _y, t _z) : x(_x), y(_y), z(_z)
     {
     }
+    Vec3<t>(Matrix m);
     template <class u> Vec3<t>(const Vec3<u> &v);
     Vec3<t>(const Vec3<t> &v) : x(t()), y(t()), z(t())
     {
@@ -146,6 +147,7 @@ class Matrix
 
   public:
     Matrix(int r = DEFAULT_ALLOC, int c = DEFAULT_ALLOC);
+    Matrix(Vec3f v);
     inline int nrows();
     inline int ncols();
 
