@@ -1,50 +1,26 @@
-#ifndef MY_GL_H
-#define MY_GL_H
-
-#include <memory>
+#ifndef __MY_GL_H__
+#define __MY_GL_H__
 
 #include "geometry.h"
-#include "model.h"
 #include "tgaimage.h"
 
 Matrix viewport(int x, int y, int w, int h);
-Matrix projection(double f);
+Matrix projection(float coeff = 0.f); // coeff = -1/c
 Matrix lookat(Vec3f eye, Vec3f center, Vec3f up);
-Vec3f barycentric(Vec3f v_pts[3], Vec3f p);
 
-class Shader {
-public:
-  Shader() = default;
-  virtual ~Shader();
-  virtual Vec3f vertex(int iface, int nthvert, Model &model) = 0;
-  virtual bool fragment(Vec3f barycentric, TGAColor &color) = 0;
+struct IShader {
+  virtual ~IShader();
+  virtual Vec3f vertex(int iface, int nthvert) = 0;
+  virtual bool fragment(Vec3f bar, TGAColor &color) = 0;
 
-public:
-  virtual void setmvp(const Matrix &MVP) { this->mvp_ = MVP; }
-  virtual void setLightDir(const Vec3f &lightDir) {
-    this->lightDir_ = lightDir;
-  }
-  virtual void setViewport(const Matrix &Viewport) {
-    this->viewport_ = Viewport;
-  }
+  void setmvp(const Matrix &mvp) { mvp_ = mvp; }
+  void setviewport(const Matrix &viewport) { viewport_ = viewport; }
 
 protected:
-  Vec3f lightDir_;
-  Matrix mvp_, viewport_;
+  Matrix mvp_;
+  Matrix viewport_;
 };
 
-void triangle(Vec3f screenCoords[3], Shader &shader, TGAImage &image,
-              TGAImage &zbuffer);
+void triangle(Vec3f *pts, IShader &shader, TGAImage &image, TGAImage &zbuffer);
 
-class GourandShader : public Shader {
-public:
-  GourandShader() {}
-  ~GourandShader() {}
-  Vec3f vertex(int iface, int nthvert, Model &model) override;
-  bool fragment(Vec3f barycentric, TGAColor &color) override;
-
-private:
-  Vec3f vertexIntensity_;
-};
-
-#endif
+#endif //__MY_GL_H__
