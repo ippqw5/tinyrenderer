@@ -47,7 +47,8 @@ Vec3f barycentric(Vec2f A, Vec2f B, Vec2f C, Vec2f P) {
   return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
-void triangle(Vec3f *pts, IShader &shader, TGAImage &image, TGAImage &zbuffer) {
+void triangle(Vec3f *pts, IShader &shader, TGAImage &image, TGAImage &zbuffer,
+              Model *model) {
   Vec2f bboxmin(std::numeric_limits<float>::max(),
                 std::numeric_limits<float>::max());
   Vec2f bboxmax(-std::numeric_limits<float>::max(),
@@ -67,7 +68,7 @@ void triangle(Vec3f *pts, IShader &shader, TGAImage &image, TGAImage &zbuffer) {
       float z = pts[0][2] * c.x + pts[1][2] * c.y + pts[2][2] * c.z;
       if (c.x < 0 || c.y < 0 || c.z < 0 || zbuffer.get(P.x, P.y)[0] > z)
         continue;
-      bool discard = shader.fragment(c, color);
+      bool discard = shader.fragment(c, color, model);
       if (!discard) {
         zbuffer.set(P.x, P.y, TGAColor(z));
         image.set(P.x, P.y, color);
