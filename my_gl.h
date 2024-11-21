@@ -13,7 +13,7 @@ struct IShader {
   virtual Vec3f vertex(int iface, int nthvert, Model *) = 0;
   virtual bool fragment(Vec3f vc, TGAColor &color, Model *) = 0;
 
-  void setmvp(const Matrix &mvp) {
+  void setMVP(const Matrix &mvp) {
     uMVP = mvp;
     uMVP_IT = uMVP.invert_transpose();
   }
@@ -25,9 +25,7 @@ protected:
   Matrix uMVP;
   Matrix uMVP_IT;
   Matrix uViewport;
-
-protected:
-  Vec2f vUV[3];
+  mat<2, 3, float> vUV;
 };
 
 void triangle(Vec3f *pts, IShader &shader, TGAImage &image, TGAImage &zbuffer,
@@ -41,14 +39,14 @@ struct GouraudShader : public IShader {
 
     gl_Vertex = uViewport * uMVP * gl_Vertex;
 
-    vUV[nthvert] = model->uv(iface, nthvert);
+    vUV.set_col(nthvert, model->uv(iface, nthvert));
 
     // homogenous coordinates --> cartesian coordinates
     return proj<3>(gl_Vertex / gl_Vertex[3]);
   }
 
   virtual bool fragment(Vec3f bc, TGAColor &color, Model *model) override {
-    Vec2f uv = vUV[0] * bc[0] + vUV[1] * bc[1] + vUV[2] * bc[2];
+    Vec2f uv = vUV * bc;
     Vec3f n = proj<3>(uMVP_IT * embed<4>(model->normal(uv))).normalize();
     Vec3f l = proj<3>(uMVP * embed<4>(uLightDir)).normalize();
     float intensity = std::max(0.f, n * l);

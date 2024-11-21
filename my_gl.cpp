@@ -1,4 +1,5 @@
 #include "my_gl.h"
+#include "tgaimage.h"
 #include <cmath>
 #include <cstdlib>
 #include <limits>
@@ -72,6 +73,8 @@ void triangle(Vec3f *pts, IShader &shader, TGAImage &image, TGAImage &zbuffer,
       if (!discard) {
         zbuffer.set(P.x, P.y, TGAColor(z));
         image.set(P.x, P.y, color);
+      } else {
+        zbuffer.set(P.x, P.y, TGAColor(z));
       }
     }
   }
